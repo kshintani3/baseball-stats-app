@@ -1,0 +1,69 @@
+NPB BASEBALL STATISTICS APP - CURRENT MANIFEST
+==============================================
+
+LOCATION: /Users/kshintani/Documents/ソフトバンク/cowork/baseball-app/
+
+SCRAPER
+=======
+
+Current execution path:
+- `scraper/cli.py`
+- `scraper/sources/baseball_reference/`
+- `scraper/sources/npb_official/`
+- `scraper/loaders/db_loader.py`
+
+Supported commands:
+  python cli.py fetch --year 2024
+  python cli.py fetch --year 2024 --type batters
+  python cli.py fetch --year 2024 --type pitchers
+  python cli.py fetch --year 2024 --type teams
+  python cli.py fetch-all --start 2020 --end 2024
+
+Behavior:
+- Tries Baseball Reference first
+- Resolves season-specific league IDs dynamically
+- Expands HTML comment-wrapped tables before parsing
+- Falls back to NPB official pages when Baseball Reference returns 403 or no rows
+- Writes directly into `data/baseball.db`
+- Keeps request throttling at 3 seconds between HTTP requests
+
+DATABASE BOOTSTRAP
+==================
+
+Backend initialization creates:
+- all tables
+- stat definitions
+- 12 NPB team master rows
+
+Player and season statistics are not bundled with the repository.
+They are populated only by running the scraper.
+
+DATA FILES
+==========
+
+Tracked:
+- `data/.gitkeep`
+
+Generated at runtime:
+- `data/baseball.db`
+
+LEGACY MODULES
+==============
+
+These files remain in the tree but are not part of the main happy-path flow:
+- `scraper/normalize/normalizer.py`
+
+Current fallback-only modules:
+- `scraper/sources/npb_official/`
+
+READY FOR USE
+=============
+
+The current app flow is:
+1. Run `python scraper/cli.py fetch ...`
+2. Start services with `docker compose up --build`
+3. Browse data from the generated SQLite database
+
+Frontend defaults:
+- batter rankings start at `min_pa=300`
+- pitcher rankings start at `min_ip=100`
