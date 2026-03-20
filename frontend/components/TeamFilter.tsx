@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { fetchTeams } from '@/lib/api';
-import { Team } from '@/types/index';
+import { Team, LEAGUE_LABELS } from '@/types/index';
 
 interface TeamFilterProps {
   value: string;
   onChange: (teamCode: string) => void;
+  league?: string;
   loading?: boolean;
 }
 
 export default function TeamFilter({
   value,
   onChange,
+  league,
   loading,
 }: TeamFilterProps) {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -56,6 +58,13 @@ export default function TeamFilter({
     );
   }
 
+  // Filter by league if specified
+  const filteredTeams = league ? teams.filter((t) => t.league === league) : teams;
+
+  // Group by league
+  const centralTeams = filteredTeams.filter((t) => t.league === 'central');
+  const pacificTeams = filteredTeams.filter((t) => t.league === 'pacific');
+
   return (
     <select
       value={value}
@@ -63,11 +72,24 @@ export default function TeamFilter({
       className="px-4 py-2 bg-gray-800 border border-gray-700 rounded text-gray-200 hover:border-blue-500 transition cursor-pointer"
     >
       <option value="">全チーム</option>
-      {teams.map((team) => (
-        <option key={team.code} value={team.code}>
-          {team.short_name}
-        </option>
-      ))}
+      {centralTeams.length > 0 && (
+        <optgroup label={LEAGUE_LABELS.central}>
+          {centralTeams.map((team) => (
+            <option key={team.code} value={team.code}>
+              {team.name_ja}
+            </option>
+          ))}
+        </optgroup>
+      )}
+      {pacificTeams.length > 0 && (
+        <optgroup label={LEAGUE_LABELS.pacific}>
+          {pacificTeams.map((team) => (
+            <option key={team.code} value={team.code}>
+              {team.name_ja}
+            </option>
+          ))}
+        </optgroup>
+      )}
     </select>
   );
 }

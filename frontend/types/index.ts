@@ -119,6 +119,7 @@ export interface RankingRow {
   name_en: string;
   team_code?: string;
   team_short_name?: string;
+  team_league?: string;
   stat_value?: number;
   position?: string;
 }
@@ -131,6 +132,7 @@ export interface RankingResponse {
   category: string;
   sort_direction: string;
   decimal_places: number;
+  league?: string;
   rows: RankingRow[];
   total_count: number;
   returned_count: number;
@@ -165,3 +167,49 @@ export interface SeasonsResponse {
 export interface TeamsMetaResponse {
   teams: Team[];
 }
+
+// Standings types
+export interface StandingsTeamRow {
+  rank: number;
+  team_id: number;
+  team_code: string;
+  name_ja: string;
+  name_en: string;
+  short_name: string;
+  league: string;
+  games?: number;
+  wins?: number;
+  losses?: number;
+  draws?: number;
+  win_pct?: number;
+  games_behind?: number;
+  runs_scored?: number;
+  runs_allowed?: number;
+  home_runs?: number;
+  stolen_bases?: number;
+  team_batting_avg?: number;
+  team_era?: number;
+}
+
+export interface LeagueStandings {
+  league: string;
+  league_name_ja: string;
+  season: number;
+  teams: StandingsTeamRow[];
+}
+
+export interface StandingsResponse {
+  season: number;
+  leagues: LeagueStandings[];
+}
+
+// League constants
+export const LEAGUE_LABELS: Record<string, string> = {
+  central: 'セ・リーグ',
+  pacific: 'パ・リーグ',
+};
+
+export const LEAGUE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  central: { bg: 'bg-orange-900/30', text: 'text-orange-400', border: 'border-orange-700' },
+  pacific: { bg: 'bg-blue-900/30', text: 'text-blue-400', border: 'border-blue-700' },
+};

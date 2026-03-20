@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchPlayer, fetchPlayerStats, fetchStatDefinitions, StatDefinition } from '@/lib/api';
-import { Player, PlayerStats } from '@/types/index';
+import { Player, PlayerStats, LEAGUE_LABELS } from '@/types/index';
 import StatsChart from '@/components/StatsChart';
 
 interface PlayerDetailProps {
@@ -110,6 +110,11 @@ export default function PlayerDetail({ params }: PlayerDetailProps) {
     })
     .sort((a, b) => a.season - b.season);
 
+  // Build throw/bat display
+  const throwHand = player.throws === 'R' ? '右投' : player.throws === 'L' ? '左投' : player.throws || '-';
+  const batHand = player.bats === 'R' ? '右打' : player.bats === 'L' ? '左打' : player.bats === 'S' ? '両打' : player.bats || '-';
+  const throwBatDisplay = `${throwHand}${batHand}`;
+
   return (
     <div className="p-8">
       {/* Back link */}
@@ -126,6 +131,23 @@ export default function PlayerDetail({ params }: PlayerDetailProps) {
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">{player.name_ja}</h1>
             <p className="text-blue-100 text-xl mb-4">{player.name_en}</p>
+
+            {/* Team & League badge */}
+            {player.team && (
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-white font-medium">{player.team.name_ja}</span>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                    player.team.league === 'central'
+                      ? 'bg-orange-500/30 text-orange-200 border border-orange-400/50'
+                      : 'bg-blue-500/30 text-blue-200 border border-blue-400/50'
+                  }`}
+                >
+                  {LEAGUE_LABELS[player.team.league] || player.team.league}
+                </span>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4 text-white">
               <div>
                 <p className="text-blue-100 text-sm">ポジション</p>
@@ -133,15 +155,21 @@ export default function PlayerDetail({ params }: PlayerDetailProps) {
               </div>
               <div>
                 <p className="text-blue-100 text-sm">背番号</p>
-                <p className="text-lg font-semibold">{player.jersey_number || '-'}</p>
-              </div>
-              <div>
-                <p className="text-blue-100 text-sm">利き足</p>
-                <p className="text-lg font-semibold">{player.throws || '-'}</p>
+                <p className="text-lg font-semibold">{player.jersey_number ?? '-'}</p>
               </div>
               <div>
                 <p className="text-blue-100 text-sm">投打</p>
-                <p className="text-lg font-semibold">{player.bats || '-'}</p>
+                <p className="text-lg font-semibold">{throwBatDisplay}</p>
+              </div>
+              <div>
+                <p className="text-blue-100 text-sm">ステータス</p>
+                <p className="text-lg font-semibold">
+                  {player.is_active ? (
+                    <span className="text-green-300">現役</span>
+                  ) : (
+                    <span className="text-gray-400">引退/育成</span>
+                  )}
+                </p>
               </div>
             </div>
           </div>
@@ -160,10 +188,12 @@ export default function PlayerDetail({ params }: PlayerDetailProps) {
                   <p className="text-blue-100 text-sm">NPB ID</p>
                   <p className="text-lg font-mono">{player.npb_id}</p>
                 </div>
-                <div>
-                  <p className="text-blue-100 text-sm">ステータス</p>
-                  <p className="text-lg">{player.is_active ? 'アクティブ' : '非アクティブ'}</p>
-                </div>
+                {stats.length > 0 && (
+                  <div>
+                    <p className="text-blue-100 text-sm">記録シーズン数</p>
+                    <p className="text-lg">{stats.length}シーズン</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -249,7 +279,7 @@ export default function PlayerDetail({ params }: PlayerDetailProps) {
                     >
                       <p className="text-gray-400 text-sm mb-1">{def.display_name_ja}</p>
                       <p className="text-2xl font-bold text-blue-300">{displayValue}</p>
-                      <p className="text-xs text-gray-500 mt-1">{def.stat_key}</p>
+                      <p className="text-xs text-gray-500 mt-1">{def.description || def.stat_key}</p>
                     </div>
                   );
                 })}
@@ -273,7 +303,7 @@ export default function PlayerDetail({ params }: PlayerDetailProps) {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
                     シーズン
                   </th>
-                  {statDefs.slice(0, 6).map((def) => (
+                  {statDefs.slice(0, 8).map((def) => (
                     <th
                       key={def.stat_key}
                       className="px-6 py-3 text-left text-sm font-semibold text-gray-300"
@@ -289,12 +319,15 @@ export default function PlayerDetail({ params }: PlayerDetailProps) {
                   .map((s, idx) => (
                     <tr
                       key={idx}
-                      className="border-b border-gray-800 hover:bg-gray-700 transition"
+                      className={`border-b border-gray-800 hover:bg-gray-700 transition ${
+                        s.season === selectedSeason ? 'bg-blue-900/20' : ''
+                      }`}
+                      onClick={() => setSelectedSeason(s.season)}
                     >
-                      <td className="px-6 py-4 text-sm font-semibold text-blue-400">
+                      <td className="px-6 py-4 text-sm font-semibold text-blue-400 cursor-pointer">
                         {s.season}年
                       </td>
-                      {statDefs.slice(0, 6).map((def) => {
+                      {statDefs.slice(0, 8).map((def) => {
                         const value = (s as any)[def.stat_key];
                         const displayValue =
                           typeof value === 'number'

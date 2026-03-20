@@ -46,11 +46,17 @@ async def get_available_seasons(session: AsyncSession = Depends(get_session)):
 
 
 @router.get("/teams", response_model=TeamsMetaResponse)
-async def get_teams_meta(session: AsyncSession = Depends(get_session)):
-    """Get teams metadata."""
+async def get_teams_meta(
+    league: Optional[str] = None,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get teams metadata, optionally filtered by league."""
     try:
         team_repo = TeamRepository(session)
-        teams = await team_repo.get_all()
+        if league:
+            teams = await team_repo.get_by_league(league)
+        else:
+            teams = await team_repo.get_all()
 
         teams_data = [
             {

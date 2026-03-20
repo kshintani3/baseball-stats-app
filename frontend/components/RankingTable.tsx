@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { RankingRow, StatDefinition } from '@/types/index';
+import { RankingRow, StatDefinition, LEAGUE_LABELS } from '@/types/index';
 
 interface RankingTableProps {
   data: RankingRow[];
@@ -9,6 +9,22 @@ interface RankingTableProps {
   loading?: boolean;
   error?: string;
   onRowClick?: (item: RankingRow) => void;
+}
+
+function LeagueBadge({ league }: { league?: string }) {
+  if (!league) return null;
+  const iscentral = league === 'central';
+  return (
+    <span
+      className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+        iscentral
+          ? 'bg-orange-900/40 text-orange-400 border border-orange-800'
+          : 'bg-blue-900/40 text-blue-400 border border-blue-800'
+      }`}
+    >
+      {iscentral ? 'セ' : 'パ'}
+    </span>
+  );
 }
 
 export default function RankingTable({
@@ -72,6 +88,11 @@ export default function RankingTable({
                 ポジション
               </th>
             )}
+            {isTeamRanking && (
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300 whitespace-nowrap">
+                リーグ
+              </th>
+            )}
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300 whitespace-nowrap">
               {statDef?.display_name_ja || '成績'}
             </th>
@@ -102,12 +123,20 @@ export default function RankingTable({
               </td>
               {!isTeamRanking && (
                 <td className="px-6 py-4 text-sm text-gray-300 whitespace-nowrap">
-                  {item.team_short_name || item.team_code || '-'}
+                  <div className="flex items-center gap-2">
+                    <LeagueBadge league={item.team_league} />
+                    <span>{item.team_short_name || item.team_code || '-'}</span>
+                  </div>
                 </td>
               )}
               {!isTeamRanking && (
                 <td className="px-6 py-4 text-sm text-gray-300 whitespace-nowrap">
                   {item.position || '-'}
+                </td>
+              )}
+              {isTeamRanking && (
+                <td className="px-6 py-4 text-sm text-gray-300 whitespace-nowrap">
+                  <LeagueBadge league={item.team_league} />
                 </td>
               )}
               <td className="px-6 py-4 text-sm font-semibold text-blue-300 whitespace-nowrap">

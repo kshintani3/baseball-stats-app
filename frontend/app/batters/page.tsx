@@ -1,15 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import SeasonSelector from '@/components/SeasonSelector';
 import StatSelector from '@/components/StatSelector';
 import TeamFilter from '@/components/TeamFilter';
+import LeagueFilter from '@/components/LeagueFilter';
 import RankingTable from '@/components/RankingTable';
 import { fetchBatterRankings, fetchStatDefinitions, StatDefinition } from '@/lib/api';
 import { RankingRow } from '@/types/index';
 
-export default function BattersPage() {
+export default function BattersPageWrapper() {
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-400">読み込み中...</div>}>
+      <BattersPage />
+    </Suspense>
+  );
+}
+
+function BattersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultMinPA = '300';
@@ -17,6 +26,7 @@ export default function BattersPage() {
   const [season, setSeason] = useState<number>(parseInt(searchParams.get('season') || '2024'));
   const [statKey, setStatKey] = useState(searchParams.get('stat_key') || '');
   const [teamCode, setTeamCode] = useState(searchParams.get('team_code') || '');
+  const [league, setLeague] = useState(searchParams.get('league') || '');
   const [minPA, setMinPA] = useState(searchParams.get('min_pa') || defaultMinPA);
   const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '20'));
   const [offset, setOffset] = useState(parseInt(searchParams.get('offset') || '0'));
@@ -44,6 +54,12 @@ export default function BattersPage() {
     initStat();
   }, [statKey]);
 
+  // Clear team filter when league changes
+  useEffect(() => {
+    setTeamCode('');
+    setOffset(0);
+  }, [league]);
+
   // Update URL params
   useEffect(() => {
     const params = new URLSearchParams({
@@ -52,14 +68,11 @@ export default function BattersPage() {
       limit: limit.toString(),
       offset: offset.toString(),
     });
-    if (teamCode) {
-      params.append('team_code', teamCode);
-    }
-    if (minPA && minPA !== defaultMinPA) {
-      params.append('min_pa', minPA);
-    }
+    if (teamCode) params.append('team_code', teamCode);
+    if (league) params.append('league', league);
+    if (minPA && minPA !== defaultMinPA) params.append('min_pa', minPA);
     router.push(`/batters?${params.toString()}`);
-  }, [season, statKey, teamCode, minPA, limit, offset, router]);
+  }, [season, statKey, teamCode, league, minPA, limit, offset, router]);
 
   // Load data
   useEffect(() => {
@@ -72,6 +85,7 @@ export default function BattersPage() {
 
         const response = await fetchBatterRankings(statKey, season, {
           team_code: teamCode || undefined,
+          league: league || undefined,
           min_pa: minPA ? parseInt(minPA) : undefined,
           limit,
         });
@@ -92,7 +106,7 @@ export default function BattersPage() {
     };
 
     loadData();
-  }, [statKey, season, teamCode, minPA, limit]);
+  }, [statKey, season, teamCode, league, minPA, limit]);
 
   const pageCount = Math.ceil(total / limit);
 
@@ -106,7 +120,7 @@ export default function BattersPage() {
 
       {/* Filters */}
       <div className="mb-8 bg-gray-800 rounded-lg border border-gray-700 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               シーズン
@@ -123,9 +137,16 @@ export default function BattersPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
+              リーグ
+            </label>
+            <LeagueFilter value={league} onChange={setLeague} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               チーム
             </label>
-            <TeamFilter value={teamCode} onChange={setTeamCode} />
+            <TeamFilter value={teamCode} onChange={setTeamCode} league={league || undefined} />
           </div>
 
           <div>

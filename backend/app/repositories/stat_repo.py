@@ -128,6 +128,7 @@ class StatRepository:
         season: int,
         stat_key: str,
         team_code: Optional[str] = None,
+        league: Optional[str] = None,
         min_pa: Optional[int] = None,
         limit: int = 20,
         sort_direction: str = "desc",
@@ -146,6 +147,9 @@ class StatRepository:
 
         if team_code:
             query = query.where(Team.code == team_code)
+
+        if league:
+            query = query.where(Team.league == league)
 
         if min_pa is not None:
             query = query.where(
@@ -178,6 +182,7 @@ class StatRepository:
         season: int,
         stat_key: str,
         role: Optional[str] = None,
+        league: Optional[str] = None,
         min_ip: Optional[float] = None,
         limit: int = 20,
         sort_direction: str = "desc",
@@ -193,6 +198,9 @@ class StatRepository:
             .join(Team, Player.team_id == Team.id)
             .where(PitcherSeasonStats.season == season)
         )
+
+        if league:
+            query = query.where(Team.league == league)
 
         if role == "starter":
             query = query.where(
@@ -236,6 +244,7 @@ class StatRepository:
         self,
         season: int,
         stat_key: str,
+        league: Optional[str] = None,
         limit: int = 20,
         sort_direction: str = "desc",
     ) -> Tuple[List[Tuple], int]:
@@ -248,6 +257,9 @@ class StatRepository:
             .join(Team, TeamSeasonStats.team_id == Team.id)
             .where(TeamSeasonStats.season == season)
         )
+
+        if league:
+            query = query.where(Team.league == league)
 
         stat_column = getattr(TeamSeasonStats, stat_key, None)
         if stat_column is not None:

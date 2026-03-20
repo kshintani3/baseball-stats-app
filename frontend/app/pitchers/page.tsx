@@ -1,15 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import SeasonSelector from '@/components/SeasonSelector';
 import StatSelector from '@/components/StatSelector';
 import TeamFilter from '@/components/TeamFilter';
+import LeagueFilter from '@/components/LeagueFilter';
 import RankingTable from '@/components/RankingTable';
 import { fetchPitcherRankings, fetchStatDefinitions, StatDefinition } from '@/lib/api';
 import { RankingRow } from '@/types/index';
 
-export default function PitchersPage() {
+export default function PitchersPageWrapper() {
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-400">読み込み中...</div>}>
+      <PitchersPage />
+    </Suspense>
+  );
+}
+
+function PitchersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultMinIP = '100';
@@ -17,6 +26,7 @@ export default function PitchersPage() {
   const [season, setSeason] = useState<number>(parseInt(searchParams.get('season') || '2024'));
   const [statKey, setStatKey] = useState(searchParams.get('stat_key') || '');
   const [teamCode, setTeamCode] = useState(searchParams.get('team_code') || '');
+  const [league, setLeague] = useState(searchParams.get('league') || '');
   const [role, setRole] = useState(searchParams.get('role') || '');
   const [minIP, setMinIP] = useState(searchParams.get('min_ip') || defaultMinIP);
   const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '20'));
@@ -45,6 +55,12 @@ export default function PitchersPage() {
     initStat();
   }, [statKey]);
 
+  // Clear team filter when league changes
+  useEffect(() => {
+    setTeamCode('');
+    setOffset(0);
+  }, [league]);
+
   // Update URL params
   useEffect(() => {
     const params = new URLSearchParams({
@@ -53,17 +69,12 @@ export default function PitchersPage() {
       limit: limit.toString(),
       offset: offset.toString(),
     });
-    if (teamCode) {
-      params.append('team_code', teamCode);
-    }
-    if (role) {
-      params.append('role', role);
-    }
-    if (minIP && minIP !== defaultMinIP) {
-      params.append('min_ip', minIP);
-    }
+    if (teamCode) params.append('team_code', teamCode);
+    if (league) params.append('league', league);
+    if (role) params.append('role', role);
+    if (minIP && minIP !== defaultMinIP) params.append('min_ip', minIP);
     router.push(`/pitchers?${params.toString()}`);
-  }, [season, statKey, teamCode, role, minIP, limit, offset, router]);
+  }, [season, statKey, teamCode, league, role, minIP, limit, offset, router]);
 
   // Load data
   useEffect(() => {
@@ -76,6 +87,7 @@ export default function PitchersPage() {
 
         const response = await fetchPitcherRankings(statKey, season, {
           team_code: teamCode || undefined,
+          league: league || undefined,
           role: role || undefined,
           min_ip: minIP ? parseFloat(minIP) : undefined,
           limit,
@@ -97,7 +109,7 @@ export default function PitchersPage() {
     };
 
     loadData();
-  }, [statKey, season, teamCode, role, minIP, limit]);
+  }, [statKey, season, teamCode, league, role, minIP, limit]);
 
   const pageCount = Math.ceil(total / limit);
 
@@ -111,7 +123,7 @@ export default function PitchersPage() {
 
       {/* Filters */}
       <div className="mb-8 bg-gray-800 rounded-lg border border-gray-700 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               シーズン
@@ -128,11 +140,20 @@ export default function PitchersPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              チーム
+              リーグ
             </label>
-            <TeamFilter value={teamCode} onChange={setTeamCode} />
+            <LeagueFilter value={league} onChange={setLeague} />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              チーム
+            </label>
+            <TeamFilter value={teamCode} onChange={setTeamCode} league={league || undefined} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               投手タイプ

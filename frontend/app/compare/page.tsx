@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SeasonSelector from '@/components/SeasonSelector';
@@ -14,7 +14,15 @@ import {
 } from '@/lib/api';
 import { Player, ComparisonResponse } from '@/types/index';
 
-export default function ComparePage() {
+export default function ComparePageWrapper() {
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-400">読み込み中...</div>}>
+      <ComparePage />
+    </Suspense>
+  );
+}
+
+function ComparePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 

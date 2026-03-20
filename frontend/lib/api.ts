@@ -5,6 +5,7 @@ import {
   StatsMetaResponse,
   SeasonsResponse,
   TeamsMetaResponse,
+  StandingsResponse,
   BatterSeasonStats,
   PitcherSeasonStats,
   PlayerStats,
@@ -41,6 +42,7 @@ export async function fetchBatterRankings(
   season: number,
   options?: {
     team_code?: string;
+    league?: string;
     min_pa?: number;
     limit?: number;
     order?: string;
@@ -50,6 +52,7 @@ export async function fetchBatterRankings(
     stat_key: statKey,
     season,
     team_code: options?.team_code,
+    league: options?.league,
     min_pa: options?.min_pa,
     limit: options?.limit || 20,
     order: options?.order,
@@ -61,6 +64,7 @@ export async function fetchPitcherRankings(
   season: number,
   options?: {
     team_code?: string;
+    league?: string;
     role?: string;
     min_ip?: number;
     limit?: number;
@@ -71,6 +75,7 @@ export async function fetchPitcherRankings(
     stat_key: statKey,
     season,
     team_code: options?.team_code,
+    league: options?.league,
     role: options?.role,
     min_ip: options?.min_ip,
     limit: options?.limit || 20,
@@ -82,6 +87,7 @@ export async function fetchTeamRankings(
   statKey: string,
   season: number,
   options?: {
+    league?: string;
     limit?: number;
     order?: string;
   }
@@ -89,13 +95,36 @@ export async function fetchTeamRankings(
   return apiCall('/api/rankings/teams', {
     stat_key: statKey,
     season,
+    league: options?.league,
     limit: options?.limit || 20,
     order: options?.order,
   });
 }
 
+export async function fetchStandings(
+  season: number,
+  league?: string
+): Promise<StandingsResponse> {
+  return apiCall('/api/standings', {
+    season,
+    league,
+  });
+}
+
 export async function fetchPlayer(playerId: number): Promise<Player> {
   return apiCall(`/api/players/${playerId}`);
+}
+
+export async function searchPlayers(
+  query: string,
+  options?: { team_code?: string; league?: string; limit?: number }
+): Promise<Player[]> {
+  return apiCall('/api/players/search', {
+    q: query,
+    team_code: options?.team_code,
+    league: options?.league,
+    limit: options?.limit || 20,
+  });
 }
 
 export async function fetchPlayerStats(
@@ -139,8 +168,8 @@ export async function fetchSeasons(): Promise<SeasonsResponse> {
   return apiCall('/api/meta/seasons');
 }
 
-export async function fetchTeams(): Promise<TeamsMetaResponse> {
-  return apiCall('/api/meta/teams');
+export async function fetchTeams(league?: string): Promise<TeamsMetaResponse> {
+  return apiCall('/api/meta/teams', { league });
 }
 
 export type { StatDefinition } from '@/types/index';
